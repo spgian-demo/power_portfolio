@@ -1,0 +1,14 @@
+# Keep the project's Python environment out of version control.
+.venv/
+
+# Ignore generated Python files and test caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Keep PyCharm settings local for this course.
+.idea/
+
+# Ignore macOS Finder metadata.
+.DS_Store
+
