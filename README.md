@@ -1,46 +1,46 @@
 # Power Portfolio
 
 Course 121: Power Portfolio Positions and Cash Flows.
+Lecture 3.2: Refactoring With the PortfolioDay Class.
 
-## Current version
+## Current model
 
-Lecture 3.1: Code Analysis and Interpretation.
+The company owns 1 wind farm and 1 solar PV farm and supplies
+customers with electricity. 
 
-The application analyses three consecutive settlement periods (25, 26 and 27)
-from one ordinary sample day. 
+The model compares , for every settlement period, the electricity generation and customer
+consumption. It calculates the required purchase from the wholesal electricity market,
+or sale, and the associated market cash flow.
 
-The portfolio contains one wind farm, one solar PV farm and the company's
-obligation to supply electricity to its customers.
+This version organises 3 illustrative settlement periods in a `PortfolioDay`
+object with delivery date **2026-09-01**, as an example. 
 
-## Calculations
+The 3 financial calculation functions are moved unchanged from Lecture 3.1
+into `portfolio_calculations.py`. The class reuses them.
 
-The model calculates generation, customer consumption, the pre-trade net
-position, required electricity purchases or sales, and wholesale market cash
-flows for each period. It then sums the additive energy and monetary results.
+## Inputs and expected results
 
-The example requires a 2 MWh purchase at 80 GBP/MWh and a 2 MWh sale at
-100 GBP/MWh. The third period is balanced. Total generation and consumption
-are both 36 MWh, but transactions are still required in individual periods.
-The total net market cash flow is +40 GBP.
+| Period | Wind MWh | Solar MWh | Customer consumption MWh | Price GBP/MWh | Net position MWh | Net market cash flow GBP |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 25 | 8 | 2 | 12 | 80 | -2 | -160 |
+| 26 | 12 | 2 | 12 | 100 | 2 | 200 |
+| 27 | 10 | 2 | 12 | 60 | 0 | 0 |
 
-## Assumptions and limitations
-
-- Energy inputs are period totals in MWh. Prices are in GBP/MWh.
-- One assumed price applies to both buying and selling within each period.
-- Market cash flow is not complete company profit or loss.
+Across these 3 periods, generation and customer consumption both total
+36 MWh. The model nevertheless purchases 2 MWh in period 25 and sells 2 MWh in
+period 26. The purchase cost is 160 GBP and the sale revenue is 200 GBP. The total
+net market cash flow is therefore +40 GBP. These are not full-day totals or
+complete company profit.
 
 ## Files
 
-- `main.py`: single-period calculation, multi-period processing and reporting.
-- `test_main.py`: the original shortage test and a three-period test.
-- `.gitignore`: environment and generated-file exclusions from Lecture 2.5.
+- `portfolio_calculations.py`: the 3 existing calculation functions.
+- `portfolio_day.py`: `PortfolioDay`, its date, period checks and calculation methods.
+- `main.py`: the input records, object creation and printed report.
+- `test_main.py`: the two original tests, with imports updated to the new module.
+- `test_portfolio_day.py`: nine tests of the new class, including expected failures.
 
-## Run on macOS
+Keep your existing `.gitignore`. Do not commit `.venv`, caches or secrets.
 
-Use the existing project virtual environment from Section 2. No new dependency
-is required for Lecture 3.1; pytest was installed in Lecture 2.4.
-
-```bash
-./.venv/bin/python main.py
-./.venv/bin/python -m pytest -q test_main.py
-```
+There are no new third-party dependencies. `datetime` is in Python's standard
+library. `pytest` was installed in Lecture 2.4. 

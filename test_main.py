@@ -1,6 +1,6 @@
 import pytest
 
-from main import (
+from portfolio_calculations import (
     calculate_portfolio_period,
     calculate_portfolio_periods,
     summarise_period_results,
