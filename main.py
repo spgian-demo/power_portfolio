@@ -1,8 +1,9 @@
-""" Lecture 3.2"""
+""" Lecture 4.1: add time labels to the existing 3-period model"""
 
 from datetime import date
 
 from portfolio_day import PortfolioDay
+from settlement_periods import settlement_period_label
 
 def main() -> None:
     """Run 3 periods and print results"""
@@ -45,8 +46,14 @@ def main() -> None:
     print(f"Delivery date: {portfolio_day.delivery_date.isoformat()}")
 
     for result in results:
+        # PortfolioDay has already checked that this identifier is an integer.
+        period_number = int(result["settlement_period"])
+        period_label = settlement_period_label(
+            portfolio_day.delivery_date, period_number
+        )
+
         print()
-        print(f"SETTLEMENT PERIOD {result['settlement_period']:.0f}")
+        print(f"SETTLEMENT PERIOD {period_number} | {period_label}")
         print(
             f"Wind: {result['wind_mwh']:.2f} MWh | "
             f"Solar PV: {result['solar_mwh']:.2f} MWh"
