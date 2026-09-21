@@ -5,6 +5,7 @@ from portfolio_calculations import (
     calculate_portfolio_periods,
     summarise_period_results,
 )
+from sample_data import generate_sample_day
 
 
 def test_short_portfolio_cash_flow() -> None:
@@ -102,3 +103,16 @@ def test_three_period_results_and_totals() -> None:
         "net_market_cash_flow_gbp": 40.0,
     }
     assert totals == pytest.approx(expected_totals, rel=0, abs=1e-9)
+
+    def test_sample_day_contains_all_48_periods() -> None:
+        inputs = generate_sample_day(seed=42)
+        numbers = [period["settlement_period"] for period in inputs]
+
+        # Equality checks the count, identifiers, uniqueness and order together.
+        assert numbers == list(range(1, 49))
+
+    def test_sample_day_is_reproducible() -> None:
+        first_run = generate_sample_day(seed=42)
+        second_run = generate_sample_day(seed=42)
+
+        assert first_run == second_run

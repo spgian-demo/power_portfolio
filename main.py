@@ -4,33 +4,11 @@ from datetime import date
 
 from portfolio_day import PortfolioDay
 from settlement_periods import settlement_period_label
+from sample_data import generate_sample_day
 
 def main() -> None:
-    """Run 3 periods and print results"""
-
-    period_inputs : list[dict[str,int | float]] = [
-        {
-            "settlement_period": 25,
-            "wind_mwh": 8.0,
-            "solar_mwh": 2.0,
-            "demand_mwh":12.0,
-            "price_gbp_per_mwh": 80.0,
-        },
-        {
-            "settlement_period": 26,
-            "wind_mwh": 12.0,
-            "solar_mwh": 2.0,
-            "demand_mwh": 12.0,
-            "price_gbp_per_mwh": 100.0,
-        },
-        {
-            "settlement_period": 27,
-            "wind_mwh": 10.0,
-            "solar_mwh": 2.0,
-            "demand_mwh": 12.0,
-            "price_gbp_per_mwh": 60.0,
-        },
-    ]
+    seed = 42
+    period_inputs = generate_sample_day(seed=seed)
 
 
     # Assign the same three illustrative records to one chosen delivery date.

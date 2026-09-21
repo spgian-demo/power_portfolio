@@ -1,90 +1,54 @@
 # Power Portfolio
 
 Course 121: Power Portfolio Positions and Cash Flows.
-Lecture 3.2: Refactoring With the PortfolioDay Class.
+Lecture 4.2: Generating Reproducible Example Data.
 
 ## Current model
 
-The company owns 1 wind farm and 1 solar PV farm and supplies
-customers with electricity. 
+The model generates inputs for all 48 half-hour settlement periods
+of the delivery day. It compares generation from one wind farm and
+one solar PV farm with the electricity consumption of the company's customers.
 
-The model compares , for every settlement period, the electricity generation and customer
-consumption. It calculates the required purchase from the wholesale electricity market,
-or sale, and the associated market cash flow.
+The date 2026-09-01 labels the example. The generator does not use the date,
+weather, location or installed capacities to construct its profiles.
+The supplied profiles are invented inputs, not measurements,
+forecasts.
 
-There are 3 settlement periods in the `PortfolioDay`
-object, with delivery date 2026-09-01.  
-This code still covers periods 25, 26 and 27 on the delivery
-date 1/September/2026.
+For each period the model calculates generation, the pre-trade net position,
+purchases or sales, and associated wholesale market cash flows. It then adds
+those period-level results. It does not net electricity across time first.
+The same assumed price applies to a period's purchases and sales, with no
+transaction fees. No trade execution or bank payment dates are modelled.
+Market cash flow is not complete company profit.
 
-The 3 financial calculation functions are unchanged 
-into `portfolio_calculations.py`.
+## Example data rules
 
+- Wind energy: independent uniform draws between 6 and 14 MWh per period.
+- Solar energy: a fixed triangular profile indexed by period start hour,
+  with 6 MWh at 12:00 and zero at/before 06:00 and at/after 18:00.
+  This directly assigns period energy; it is not an integrated power curve
+  or a date-specific daylight calculation.
+- For period starts from 07:00 to before 10:00, or 17:00 to before 20:00:
+  base demand 15 MWh and base price 110 GBP/MWh.
+- For other starts from 06:00 to before 22:00:
+  base demand 12 MWh and base price 80 GBP/MWh.
+- Otherwise: base demand 9 MWh and base price 60 GBP/MWh.
+- Demand adjustments: uniform between -1 and +1 MWh.
+- Price adjustments: uniform between -10 and +10 GBP/MWh.
+- Inputs are rounded to two decimal places for teaching convenience.
 
-## Time convention and limitations
+All ranges and time blocks are chosen assumptions, not industry estimates.
+The generated prices are positive; the unchanged financial formulas also
+accept negative prices, which will be interpreted in a later lesson.
 
-The caller must choose an ordinary 24-hour day without a clock change.
-Period 1 begins at 00:00. Period 48 ends at 00:00 on the following date.
-Start times are inclusive and end times exclusive.
+## Reproducibility
 
-The returned datetimes have no time-zone information. We interpret them as
-local clock times, not as UTC timestamps.
-This version neither detects clock-change dates nor implements 46- or 50-period
-days or time-zone conversion. It must not be used as a general GB settlement
-calendar for arbitrary dates.
+`main.py` uses seed 42. `generate_sample_day` creates a fresh local `Random`
+instance on every call. Repeat the same code, seed and Python environment to
+reproduce the same input records. Changing the seed changes the random wind,
+demand and price values, not the fixed solar shape. Changing only the date
+changes labels, not the generated values. The same seed is not a guarantee
+across edited generation rules or every future Python version.
 
-The helper accepts a date-only object and an integer period number between 1 and
-48. 
-
-The existing financial calculations are unchanged.
-
-
-## Inputs and expected results
-
-| Period | Label | Wind MWh | Solar MWh | Demand MWh | Price GBP/MWh | Position MWh | Market cash flow GBP |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 25 | 12:00-12:30 | 8 | 2 | 12 | 80 | -2 | -160 |
-| 26 | 12:30-13:00 | 12 | 2 | 12 | 100 | 2 | 200 |
-| 27 | 13:00-13:30 | 10 | 2 | 12 | 60 | 0 | 0 |
-
-Generation and customer consumption each total 36 MWh. The company nevertheless
-buys 2 MWh for period 25 and sells 2 MWh for period 26. Purchase cost is 160 GBP.
-Sale revenue is 200 GBP. Total net market cash flow remains +40 GBP.
-These are three-period totals, not full-day totals or complete company profit.
-The model does not choose generation profiles or implement an arbitrage strategy.
-
-## Files
-
-- `portfolio_calculations.py`: the 3 existing calculation functions.
-- `portfolio_day.py`: `PortfolioDay`, its date, period checks and calculation methods.
-- `main.py`: the input records, object creation and printed report.
-- `test_main.py`: the two original tests, with imports updated to the new module.
-- `test_portfolio_day.py`: nine tests of the new class, including expected failures.
-
-
-## Files
-
-- `main.py`: same inputs and report, now with time labels.
-- `settlement_periods.py`: new time calculation and label functions.
-- `test_settlement_periods.py`: nine new tests, including report-output checks.
-- `portfolio_calculations.py`: unchanged financial functions from Lecture 3.2.
-- `portfolio_day.py`: unchanged dated collection and period validation.
-- `test_main.py`: unchanged two calculation tests.
-- `test_portfolio_day.py`: unchanged nine class tests.
-
-
-## Development checkpoint
-
-Review the changes, run the model and all tests, then stage:
-
-```text
-main.py
-settlement_periods.py
-test_settlement_periods.py
-README.md
-```
-
-Suggested commit message: `Add settlement-period times and labels`.
-
-Continue on the existing branch and push the completed commit using the workflow
-already introduced. Do not commit virtual environments, caches or secrets.
+The generated list is held in memory during execution. This version does
+not save it to a CSV file. Data export is a later course step.

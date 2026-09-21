@@ -94,9 +94,13 @@ def test_report_shows_time_labels(capsys: pytest.CaptureFixture[str]) -> None:
     main()
     output = capsys.readouterr().out
 
+    assert "POWER PORTFOLIO: 48 SETTLEMENT PERIODS" in output
     assert "Delivery date: 2026-09-01" in output
+    assert "SETTLEMENT PERIOD 1 | 00:00-00:30" in output
     assert "SETTLEMENT PERIOD 25 | 12:00-12:30" in output
     assert "SETTLEMENT PERIOD 26 | 12:30-13:00" in output
     assert "SETTLEMENT PERIOD 27 | 13:00-13:30" in output
-    assert "TOTALS FOR THESE 3 PERIODS ONLY" in output
-    assert "Total net market cash flow: +40.00 GBP" in output
+    assert "SETTLEMENT PERIOD 48 | 23:30-00:00 (+1 day)" in output
+    assert "TOTALS FOR THESE 48 PERIODS ONLY" in output
+    assert "Total net market cash flow:" in output
+    assert output.count("\nSETTLEMENT PERIOD ") == 48
