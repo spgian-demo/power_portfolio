@@ -1,4 +1,4 @@
-""" Lecture 4.1: add time labels to the existing 3-period model"""
+""" Lecture 4.3"""
 
 from datetime import date
 
@@ -18,10 +18,18 @@ def main() -> None:
     )
 
     results = portfolio_day.calculate_results()
+    period_numbers = [result["settlement_period"] for result in results]
+    # previous versions allowed the model to have less than 48 periods. Now only 48.
+    if period_numbers != list(range(1, 49)):
+        raise ValueError(
+            "This full-day report requires settlement periods 1 to 48 in order."
+        )
+
     totals = portfolio_day.calculate_totals()
 
     print(f"POWER PORTFOLIO: {portfolio_day.period_count} SETTLEMENT PERIODS")
     print(f"Delivery date: {portfolio_day.delivery_date.isoformat()}")
+    print(f"Data seed: {seed}")
 
     for result in results:
         # PortfolioDay has already checked that this identifier is an integer.
@@ -67,6 +75,29 @@ def main() -> None:
     print(f"Total purchase cost: {totals['purchase_cost_gbp']:.2f} GBP")
     print(f"Total sale revenue: {totals['sale_revenue_gbp']:.2f} GBP")
     print(f"Total net market cash flow: {totals['net_market_cash_flow_gbp']:+.2f} GBP")
+
+    positions = [result["position"] for result in results]
+    print()
+    print("DAILY INTERPRETATION")
+    print(f"Long periods: {positions.count('LONG')}")
+    print(f"Short periods: {positions.count('SHORT')}")
+    print(f"Balanced periods: {positions.count('BALANCED')}")
+
+    # NEW: Monetary totals divided by traded MWh give volume-weighted prices.
+    # Use unrounded totals for the division. Round only the displayed values.
+    if totals["purchase_mwh"] > 0.0:
+        average_purchase_price = totals["purchase_cost_gbp"] / totals["purchase_mwh"]
+        print(
+            f"Volume-weighted purchase price: {average_purchase_price:.2f} GBP/MWh"
+        )
+    else:
+        print("Volume-weighted purchase price: N/A (no purchases)")
+
+    if totals["sale_mwh"] > 0.0:
+        average_sale_price = totals["sale_revenue_gbp"] / totals["sale_mwh"]
+        print(f"Volume-weighted sale price: {average_sale_price:.2f} GBP/MWh")
+    else:
+        print("Volume-weighted sale price: N/A (no sales)")
 
 if __name__ == "__main__":
     main()

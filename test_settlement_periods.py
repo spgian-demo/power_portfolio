@@ -1,4 +1,4 @@
-"""Lecture 4.1: Check time calculations, labels and the updated report."""
+"""Lecture 4.3"""
 
 from datetime import date, datetime, timedelta
 
@@ -104,3 +104,9 @@ def test_report_shows_time_labels(capsys: pytest.CaptureFixture[str]) -> None:
     assert "TOTALS FOR THESE 48 PERIODS ONLY" in output
     assert "Total net market cash flow:" in output
     assert output.count("\nSETTLEMENT PERIOD ") == 48
+
+    assert "Long periods: 29" in output
+    assert "Short periods: 19" in output
+    assert "Balanced periods: 0" in output
+    assert "Volume-weighted purchase price: 97.10 GBP/MWh" in output
+    assert "Volume-weighted sale price: 70.77 GBP/MWh" in output

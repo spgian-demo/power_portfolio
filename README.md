@@ -1,25 +1,22 @@
 # Power Portfolio
 
 Course 121: Power Portfolio Positions and Cash Flows.
-Lecture 4.2: Generating Reproducible Example Data.
+Lecture 4.3: Full-Day Code Analysis and Interpretation.
 
 ## Current model
 
-The model generates inputs for all 48 half-hour settlement periods
-of the delivery day. It compares generation from one wind farm and
+The application generates inputs for all 48 half-hour settlement periods
+of one ordinary sample day. It compares generation from one wind farm and
 one solar PV farm with the electricity consumption of the company's customers.
 
-The date 2026-09-01 labels the example. The generator does not use the date,
-weather, location or installed capacities to construct its profiles.
-The supplied profiles are invented inputs, not measurements,
-forecasts.
+The date 2026-09-01 is the delivery date. 
+The supplied profiles are illustrative inputs.
 
 For each period the model calculates generation, the pre-trade net position,
 purchases or sales, and associated wholesale market cash flows. It then adds
-those period-level results. It does not net electricity across time first.
+those period-level results. 
 The same assumed price applies to a period's purchases and sales, with no
 transaction fees. No trade execution or bank payment dates are modelled.
-Market cash flow is not complete company profit.
 
 ## Example data rules
 
@@ -35,20 +32,47 @@ Market cash flow is not complete company profit.
 - Otherwise: base demand 9 MWh and base price 60 GBP/MWh.
 - Demand adjustments: uniform between -1 and +1 MWh.
 - Price adjustments: uniform between -10 and +10 GBP/MWh.
-- Inputs are rounded to two decimal places for teaching convenience.
+- Inputs are rounded to two decimal places.
 
-All ranges and time blocks are chosen assumptions, not industry estimates.
-The generated prices are positive; the unchanged financial formulas also
-accept negative prices, which will be interpreted in a later lesson.
+All ranges and time blocks are chosen assumptions.
 
 ## Reproducibility
 
 `main.py` uses seed 42. `generate_sample_day` creates a fresh local `Random`
 instance on every call. Repeat the same code, seed and Python environment to
 reproduce the same input records. Changing the seed changes the random wind,
-demand and price values, not the fixed solar shape. Changing only the date
-changes labels, not the generated values. The same seed is not a guarantee
+demand and price values, not the fixed solar shape. The same seed is not a guarantee
 across edited generation rules or every future Python version.
 
-The generated list is held in memory during execution. This version does
-not save it to a CSV file. Data export is a later course step.
+## Lecture 4.3 additions
+
+The generated input data and the position/cash-flow formulas are unchanged
+from Lecture 4.2. Only the reporting script, its existing report test and this
+README change.
+
+Before reporting, main.py checks that the calculated period identifiers are
+exactly 1 through 48 in order. PortfolioDay still accepts partial days for
+earlier examples. This new condition belongs to the full-day report, not the
+class. It checks period coverage under the ordinary-day convention, not
+clock-change dates or the accuracy of the energy/price inputs.
+
+The report also counts long, short and balanced periods and calculates:
+
+- Volume-weighted purchase price = total purchase cost / total purchases.
+- Volume-weighted sale price = total sale revenue / total sales.
+
+These are descriptions of the already calculated transactions. They are not
+new prices used to recalculate cash flows, and not a simple average of all
+48 wholesale prices. A price is shown as N/A when its traded quantity is zero.
+The division uses unrounded computed totals; only display values are rounded.
+
+With seed 42 the reference example has 29 long periods, 19 short periods and
+no balanced periods. Generation is 571.81 MWh and consumption is 554.67 MWh.
+Purchases total 62.67 MWh and sales total 79.81 MWh. Purchase cost is displayed
+as 6085.54 GBP, sale revenue as 5648.26 GBP and net market cash flow as
+-437.28 GBP. Volume-weighted purchase and sale prices are 97.10 and 70.77
+GBP/MWh respectively, rounded for display.
+
+This illustrates why a positive daily net energy quantity does not imply a
+positive market cash flow. Period-level quantities and prices matter. It does
+not demonstrate real trading performance, optimal scheduling or company profit.
