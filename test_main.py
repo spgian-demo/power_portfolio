@@ -6,6 +6,7 @@ from portfolio_calculations import (
     summarise_period_results,
 )
 from sample_data import generate_sample_day
+from price_examples import shift_wholesale_prices
 
 
 def test_short_portfolio_cash_flow() -> None:
@@ -104,15 +105,65 @@ def test_three_period_results_and_totals() -> None:
     }
     assert totals == pytest.approx(expected_totals, rel=0, abs=1e-9)
 
-    def test_sample_day_contains_all_48_periods() -> None:
-        inputs = generate_sample_day(seed=42)
-        numbers = [period["settlement_period"] for period in inputs]
+def test_sample_day_contains_all_48_periods() -> None:
+    inputs = generate_sample_day(seed=42)
+    numbers = [period["settlement_period"] for period in inputs]
 
-        # Equality checks the count, identifiers, uniqueness and order together.
-        assert numbers == list(range(1, 49))
+    # Equality checks the count, identifiers, uniqueness and order together.
+    assert numbers == list(range(1, 49))
 
-    def test_sample_day_is_reproducible() -> None:
-        first_run = generate_sample_day(seed=42)
-        second_run = generate_sample_day(seed=42)
+def test_sample_day_is_reproducible() -> None:
+    first_run = generate_sample_day(seed=42)
+    second_run = generate_sample_day(seed=42)
 
-        assert first_run == second_run
+    assert first_run == second_run
+
+def test_positive_zero_and_negative_price_cash_flows() -> None:
+    """Compare six price examples with monetary amounts calculated by hand."""
+    # Wind MWh, price GBP/MWh, purchase cost GBP, sale revenue GBP, net cash GBP.
+    cases = [
+        (8.0, 80.0, 160.0, 0.0, -160.0),
+        (8.0, 0.0, 0.0, 0.0, 0.0),
+        (8.0, -20.0, -40.0, 0.0, 40.0),
+        (12.0, 80.0, 0.0, 160.0, 160.0),
+        (12.0, 0.0, 0.0, 0.0, 0.0),
+        (12.0, -20.0, 0.0, -40.0, -40.0),
+    ]
+
+    for wind, price, expected_cost, expected_revenue, expected_cash in cases:
+        result = calculate_portfolio_period(
+            wind_mwh=wind,
+            solar_mwh=2.0,
+            demand_mwh=12.0,
+            price_gbp_per_mwh=price,
+        )
+        actual_amounts = (
+            result["purchase_cost_gbp"],
+            result["sale_revenue_gbp"],
+            result["net_market_cash_flow_gbp"],
+        )
+        assert actual_amounts == pytest.approx(
+            (expected_cost, expected_revenue, expected_cash), rel=0, abs=1e-9
+        ), f"wind={wind}, price={price}"
+
+
+
+def test_price_shift_preserves_inputs_and_changes_cash_flow() -> None:
+    """A 2 MWh shortage costs 200 GBP after the price rises from 80 to 100."""
+    original = [{
+        "settlement_period": 25,
+        "wind_mwh": 8.0,
+        "solar_mwh": 2.0,
+        "demand_mwh": 12.0,
+        "price_gbp_per_mwh": 80.0,
+    }]
+    shifted = shift_wholesale_prices(original, 20.0)
+
+    assert original[0]["price_gbp_per_mwh"] == 80.0
+    assert shifted[0]["price_gbp_per_mwh"] == 100.0
+    for field in ("settlement_period", "wind_mwh", "solar_mwh", "demand_mwh"):
+        assert shifted[0][field] == original[0][field]
+
+    result = calculate_portfolio_periods(shifted)[0]
+    assert result["purchase_mwh"] == pytest.approx(2.0)
+    assert result["net_market_cash_flow_gbp"] == pytest.approx(-200.0)

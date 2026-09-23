@@ -1,7 +1,4 @@
-"""Lecture 4.1: Times and labels
-
-The caller must choose an ordinary day. Returned
-values are datetimes, interpreted as local clock times for this model.
+"""Lecture 5.1: Times and labels
 """
 
 from datetime import date, datetime, time, timedelta

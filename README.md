@@ -1,78 +1,63 @@
 # Power Portfolio
 
 Course 121: Power Portfolio Positions and Cash Flows.
-Lecture 4.3: Full-Day Code Analysis and Interpretation.
+Lecture 5.2: Price Sensitivity of Market Cash Flows.
 
-## Current model
+## Current baseline
 
-The application generates inputs for all 48 half-hour settlement periods
-of one ordinary sample day. It compares generation from one wind farm and
-one solar PV farm with the electricity consumption of the company's customers.
+The existing main.py still prints the same 48-period report
+for 2026-09-01 using seed 42. Its market cash flow remains -437.28 GBP.
+The generator, portfolio class, financial formulas and time helpers are
+unchanged from the preceding checkpoint.
 
-The date 2026-09-01 is the delivery date. 
-The supplied profiles are illustrative inputs.
+## Lecture 5.1 examples retained
 
-For each period the model calculates generation, the pre-trade net position,
-purchases or sales, and associated wholesale market cash flows. It then adds
-those period-level results. 
-The same assumed price applies to a period's purchases and sales, with no
-transaction fees. No trade execution or bank payment dates are modelled.
+price_examples.py first prints the six original single-period cases.
+Their numerical results are unchanged. They compare a 2 MWh shortage and
+surplus at 80, 0 and -20 GBP/MWh.  
 
-## Example data rules
+## Lecture 5.2 comparison
 
-- Wind energy: independent uniform draws between 6 and 14 MWh per period.
-- Solar energy: a fixed triangular profile indexed by period start hour,
-  with 6 MWh at 12:00 and zero at/before 06:00 and at/after 18:00.
-  This directly assigns period energy; it is not an integrated power curve
-  or a date-specific daylight calculation.
-- For period starts from 07:00 to before 10:00, or 17:00 to before 20:00:
-  base demand 15 MWh and base price 110 GBP/MWh.
-- For other starts from 06:00 to before 22:00:
-  base demand 12 MWh and base price 80 GBP/MWh.
-- Otherwise: base demand 9 MWh and base price 60 GBP/MWh.
-- Demand adjustments: uniform between -1 and +1 MWh.
-- Price adjustments: uniform between -10 and +10 GBP/MWh.
-- Inputs are rounded to two decimal places.
+The script then compares three alternative versions of ONE day:
+original prices, every price 20 GBP/MWh lower, and every price 20 GBP/MWh
+higher. All shifts are relative to the original dataset, not cumulative.
 
-All ranges and time blocks are chosen assumptions.
+Wind generation, solar generation and customer consumption are identical
+in every case. The same price applies to purchases and sales within each
+period. No transactions, payment dates, assets or contracts are added.
+The scenarios revalue the modelled purchases and sales; they do not change
+payments already agreed or represent mark-to-market valuation of contracts.
 
-## Reproducibility
+shift_wholesale_prices copies each input dictionary before changing its
+price. It does not mutate the baseline. Only finite numeric shifts are
+accepted, and negative resulting prices are not clipped or removed.
+The caller still supplies valid energy/price records, as in the earlier model.
 
-`main.py` uses seed 42. `generate_sample_day` creates a fresh local `Random`
-instance on every call. Repeat the same code, seed and Python environment to
-reproduce the same input records. Changing the seed changes the random wind,
-demand and price values, not the fixed solar shape. The same seed is not a guarantee
-across edited generation rules or every future Python version.
+| Case | Price shift GBP/MWh | Buy MWh | Sell MWh | Net cash GBP | Change GBP |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline | 0 | 62.67 | 79.81 | -437.28 | 0.00 |
+| Prices lower | -20 | 62.67 | 79.81 | -780.08 | -342.80 |
+| Prices higher | +20 | 62.67 | 79.81 | -94.48 | +342.80 |
 
-## Lecture 4.3 additions
+Values are rounded for display, not before the calculation.
+For a UNIFORM additive price shift with fixed volumes, the cash-flow change
+is (total sales - total purchases) multiplied by the shift. Here that is
+(79.81 - 62.67) * 20 = +342.80 GBP for a +20 GBP/MWh shift.
+This change is not the new total cash flow and is not complete profit.
 
-The generated input data and the position/cash-flow formulas are unchanged
-from Lecture 4.2. Only the reporting script, its existing report test and this
-README change.
+This identity does not make daily netting a valid replacement for the
+period calculations. For non-uniform changes, the effect depends on each
+period's net position and its own price change.
 
-Before reporting, main.py checks that the calculated period identifiers are
-exactly 1 through 48 in order. PortfolioDay still accepts partial days for
-earlier examples. This new condition belongs to the full-day report, not the
-class. It checks period coverage under the ordinary-day convention, not
-clock-change dates or the accuracy of the energy/price inputs.
+This is a controlled sensitivity exercise, not a forecast, probability
+model, hedge, market-risk estimate, strategy backtest or optimisation.
 
-The report also counts long, short and balanced periods and calculates:
+## Run in the existing macOS project
 
-- Volume-weighted purchase price = total purchase cost / total purchases.
-- Volume-weighted sale price = total sale revenue / total sales.
+There are no new third-party dependencies, source modules or test modules.
 
-These are descriptions of the already calculated transactions. They are not
-new prices used to recalculate cash flows, and not a simple average of all
-48 wholesale prices. A price is shown as N/A when its traded quantity is zero.
-The division uses unrounded computed totals; only display values are rounded.
+## Git checkpoint
 
-With seed 42 the reference example has 29 long periods, 19 short periods and
-no balanced periods. Generation is 571.81 MWh and consumption is 554.67 MWh.
-Purchases total 62.67 MWh and sales total 79.81 MWh. Purchase cost is displayed
-as 6085.54 GBP, sale revenue as 5648.26 GBP and net market cash flow as
--437.28 GBP. Volume-weighted purchase and sale prices are 97.10 and 70.77
-GBP/MWh respectively, rounded for display.
-
-This illustrates why a positive daily net energy quantity does not imply a
-positive market cash flow. Period-level quantities and prices matter. It does
-not demonstrate real trading performance, optimal scheduling or company profit.
+Review and stage only price_examples.py, test_main.py and README.md.
+Suggested commit: Add daily wholesale price sensitivity examples
+Continue on the existing branch and push the checked checkpoint.
