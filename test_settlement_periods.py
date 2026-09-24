@@ -1,7 +1,7 @@
 """Lecture 5.1"""
 
 from datetime import date, datetime, timedelta
-
+from pathlib import Path
 import pytest
 
 from main import main
@@ -89,9 +89,11 @@ def test_requires_a_date_object() -> None:
             settlement_period_times(invalid_date, 25)  # type: ignore[arg-type]
 
 
-def test_report_shows_time_labels(capsys: pytest.CaptureFixture[str]) -> None:
+def test_report_shows_time_labels(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     # capsys captures text printed by main(), supplied automatically by pytest.
-    main()
+    main(output_directory=tmp_path)
     output = capsys.readouterr().out
 
     assert "POWER PORTFOLIO: 48 SETTLEMENT PERIODS" in output
@@ -110,3 +112,13 @@ def test_report_shows_time_labels(capsys: pytest.CaptureFixture[str]) -> None:
     assert "Balanced periods: 0" in output
     assert "Volume-weighted purchase price: 97.10 GBP/MWh" in output
     assert "Volume-weighted sale price: 70.77 GBP/MWh" in output
+
+    csv_path = tmp_path / "portfolio_inputs_2026-09-01.csv"
+    lines = csv_path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 49  # One header plus 48 input records.
+    assert lines[0] == (
+        "delivery_date,settlement_period,wind_mwh,solar_mwh,"
+        "demand_mwh,price_gbp_per_mwh"
+    )
+    assert lines[1].startswith("2026-09-01,1,")
+    assert lines[-1].startswith("2026-09-01,48,")

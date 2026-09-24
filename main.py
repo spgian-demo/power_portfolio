@@ -1,17 +1,24 @@
-""" Lecture 5.1"""
+""" Lecture 6.1"""
 
 from datetime import date
+
+from portfolio_io import save_portfolio_inputs_csv
+from pathlib import Path
 
 from portfolio_day import PortfolioDay
 from settlement_periods import settlement_period_label
 from sample_data import generate_sample_day
 
-def main() -> None:
+def main(output_directory: Path | None = None) -> None:
+    """Print the day report and save its inputs to the chosen folder.
+
+    By default, use the data folder beside main.py. An alternative folder can
+    be supplied, for example by the existing report test.
+    """
+
     seed = 42
     period_inputs = generate_sample_day(seed=seed)
 
-
-    # Assign the same three illustrative records to one chosen delivery date.
     portfolio_day = PortfolioDay(
         delivery_date=date(2026, 9, 1),
         period_inputs=period_inputs,
@@ -83,7 +90,7 @@ def main() -> None:
     print(f"Short periods: {positions.count('SHORT')}")
     print(f"Balanced periods: {positions.count('BALANCED')}")
 
-    # NEW: Monetary totals divided by traded MWh give volume-weighted prices.
+    #Monetary totals divided by traded MWh give volume-weighted prices.
     # Use unrounded totals for the division. Round only the displayed values.
     if totals["purchase_mwh"] > 0.0:
         average_purchase_price = totals["purchase_cost_gbp"] / totals["purchase_mwh"]
@@ -98,6 +105,22 @@ def main() -> None:
         print(f"Volume-weighted sale price: {average_sale_price:.2f} GBP/MWh")
     else:
         print("Volume-weighted sale price: N/A (no sales)")
+
+    # Save the SAME inputs that were supplied to PortfolioDay above.
+    # Use a path beside this script, not a personal or working-directory path.
+    if output_directory is None:
+        output_directory = Path(__file__).resolve().parent / "data"
+    csv_path = output_directory / (
+        f"portfolio_inputs_{portfolio_day.delivery_date.isoformat()}.csv"
+    )
+    save_portfolio_inputs_csv(
+        file_path=csv_path,
+        delivery_date=portfolio_day.delivery_date,
+        period_inputs=period_inputs,
+    )
+    print()
+    print(f"Saved {len(period_inputs)} input records to: {csv_path}")
+
 
 if __name__ == "__main__":
     main()
