@@ -1,30 +1,38 @@
-""" Lecture 6.1"""
+""" Lecture 6.2"""
 
-from datetime import date
 
-from portfolio_io import save_portfolio_inputs_csv
+from portfolio_io import load_portfolio_inputs_csv
 from pathlib import Path
 
 from portfolio_day import PortfolioDay
 from settlement_periods import settlement_period_label
-from sample_data import generate_sample_day
 
-def main(output_directory: Path | None = None) -> None:
-    """Print the day report and save its inputs to the chosen folder.
-
-    By default, use the data folder beside main.py. An alternative folder can
-    be supplied, for example by the existing report test.
+def main(input_csv: Path | None = None) -> None:
+    """Read a saved input file and print its portfolio results.
     """
 
-    seed = 42
-    period_inputs = generate_sample_day(seed=seed)
+    if input_csv is None:
+        input_csv = (
+            Path(__file__).resolve().parent
+            / "data"
+            / "portfolio_inputs_2026-09-01.csv"
+        )
+
+    # The contents of the CSV supply both the date and the energy/price inputs.
+    # A missing file raises an error.
+
+    delivery_date, period_inputs = load_portfolio_inputs_csv(input_csv)
+
+
+
 
     portfolio_day = PortfolioDay(
-        delivery_date=date(2026, 9, 1),
+        delivery_date=delivery_date,
         period_inputs=period_inputs,
     )
 
     results = portfolio_day.calculate_results()
+
     period_numbers = [result["settlement_period"] for result in results]
     # previous versions allowed the model to have less than 48 periods. Now only 48.
     if period_numbers != list(range(1, 49)):
@@ -32,11 +40,12 @@ def main(output_directory: Path | None = None) -> None:
             "This full-day report requires settlement periods 1 to 48 in order."
         )
 
+
     totals = portfolio_day.calculate_totals()
 
     print(f"POWER PORTFOLIO: {portfolio_day.period_count} SETTLEMENT PERIODS")
     print(f"Delivery date: {portfolio_day.delivery_date.isoformat()}")
-    print(f"Data seed: {seed}")
+    print(f"Input CSV: {input_csv}")
 
     for result in results:
         # PortfolioDay has already checked that this identifier is an integer.
@@ -105,22 +114,6 @@ def main(output_directory: Path | None = None) -> None:
         print(f"Volume-weighted sale price: {average_sale_price:.2f} GBP/MWh")
     else:
         print("Volume-weighted sale price: N/A (no sales)")
-
-    # Save the SAME inputs that were supplied to PortfolioDay above.
-    # Use a path beside this script, not a personal or working-directory path.
-    if output_directory is None:
-        output_directory = Path(__file__).resolve().parent / "data"
-    csv_path = output_directory / (
-        f"portfolio_inputs_{portfolio_day.delivery_date.isoformat()}.csv"
-    )
-    save_portfolio_inputs_csv(
-        file_path=csv_path,
-        delivery_date=portfolio_day.delivery_date,
-        period_inputs=period_inputs,
-    )
-    print()
-    print(f"Saved {len(period_inputs)} input records to: {csv_path}")
-
 
 if __name__ == "__main__":
     main()

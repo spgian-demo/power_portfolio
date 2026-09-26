@@ -1,9 +1,10 @@
-"""Lecture 6.1"""
+"""Lecture 6.2"""
 
 import csv
 from datetime import date
 from pathlib import Path
 
+from math import isfinite
 
 def save_portfolio_inputs_csv(
     file_path: Path,
@@ -41,3 +42,64 @@ def save_portfolio_inputs_csv(
                     "price_gbp_per_mwh": period["price_gbp_per_mwh"],
                 }
             )
+
+
+def load_portfolio_inputs_csv(
+    file_path: Path,
+) -> tuple[date, list[dict[str, int | float]]]:
+    """Read one delivery date and its input records without changing the file.
+    """
+    expected_columns = [
+        "delivery_date",
+        "settlement_period",
+        "wind_mwh",
+        "solar_mwh",
+        "demand_mwh",
+        "price_gbp_per_mwh",
+    ]
+    numeric_fields = expected_columns[2:]
+    delivery_date: date | None = None
+    period_inputs: list[dict[str, int | float]] = []
+
+    # Read only.
+    with file_path.open("r", newline="", encoding="utf-8-sig") as csv_file:
+        reader = csv.DictReader(csv_file)
+        print(reader.fieldnames)
+        if reader.fieldnames != expected_columns:
+            raise ValueError("CSV columns must be: " + ", ".join(expected_columns))
+
+        for record_number, row in enumerate(reader, start=2):
+            if None in row or any(value is None for value in row.values()):
+                raise ValueError(f"CSV record {record_number}: expected six fields.")
+
+            # CSV values arrive as text. Restore the date and numeric types.
+            try:
+                row_date = date.fromisoformat(row["delivery_date"].strip())
+                period: dict[str, int | float] = {
+                    "settlement_period": int(row["settlement_period"])
+                }
+                for field in numeric_fields:
+                    period[field] = float(row[field])
+
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"CSV record {record_number}: invalid date or numeric value."
+                ) from exc
+
+            if delivery_date is None:
+                delivery_date = row_date
+            elif row_date != delivery_date:
+                raise ValueError("All CSV records must have the same delivery date.")
+
+            # Small input checks at the file boundary. Negative prices are valid.
+            if any(not isfinite(period[field]) for field in numeric_fields):
+                raise ValueError(f"CSV record {record_number}: values must be finite.")
+            if any(period[field] < 0.0 for field in numeric_fields[:3]):
+                raise ValueError(f"CSV record {record_number}: energy cannot be negative.")
+
+            period_inputs.append(period)
+
+    if delivery_date is None:
+        raise ValueError("The CSV contains no input records.")
+
+    return delivery_date, period_inputs

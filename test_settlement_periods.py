@@ -6,7 +6,8 @@ import pytest
 
 from main import main
 from settlement_periods import settlement_period_label, settlement_period_times
-
+from portfolio_io import load_portfolio_inputs_csv, save_portfolio_inputs_csv
+from sample_data import generate_sample_day
 
 def test_first_settlement_period_times() -> None:
     start_time, end_time = settlement_period_times(date(2026, 9, 1), 1)
@@ -92,9 +93,19 @@ def test_requires_a_date_object() -> None:
 def test_report_shows_time_labels(
     capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
-    # capsys captures text printed by main(), supplied automatically by pytest.
-    main(output_directory=tmp_path)
+    # Create a temporary input file, not a new project-data export.
+    csv_path = tmp_path / "portfolio_inputs_2026-09-01.csv"
+    original_inputs = generate_sample_day(seed=42)
+    save_portfolio_inputs_csv(csv_path, date(2026, 9, 1), original_inputs)
+    original_file = csv_path.read_bytes()
+
+    loaded_date, loaded_inputs = load_portfolio_inputs_csv(csv_path)
+    assert loaded_date == date(2026, 9, 1)
+    assert loaded_inputs == original_inputs
+
+    main(input_csv=csv_path)
     output = capsys.readouterr().out
+    assert csv_path.read_bytes() == original_file  # The report must not overwrite it.
 
     assert "POWER PORTFOLIO: 48 SETTLEMENT PERIODS" in output
     assert "Delivery date: 2026-09-01" in output
@@ -113,7 +124,6 @@ def test_report_shows_time_labels(
     assert "Volume-weighted purchase price: 97.10 GBP/MWh" in output
     assert "Volume-weighted sale price: 70.77 GBP/MWh" in output
 
-    csv_path = tmp_path / "portfolio_inputs_2026-09-01.csv"
     lines = csv_path.read_text(encoding="utf-8").splitlines()
     assert len(lines) == 49  # One header plus 48 input records.
     assert lines[0] == (
