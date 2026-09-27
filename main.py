@@ -1,15 +1,17 @@
-""" Lecture 6.2"""
+""" Lecture 6.3"""
 
 
-from portfolio_io import load_portfolio_inputs_csv
+from portfolio_io import load_portfolio_inputs_csv, save_portfolio_results_csv
 from pathlib import Path
 
 from portfolio_day import PortfolioDay
 from settlement_periods import settlement_period_label
 
-def main(input_csv: Path | None = None) -> None:
-    """Read a saved input file and print its portfolio results.
-    """
+def main(
+    input_csv: Path | None = None,
+    output_directory: Path | None = None,
+) -> None:
+    """Read inputs, print results and write a separate period-results CSV."""
 
     if input_csv is None:
         input_csv = (
@@ -114,6 +116,22 @@ def main(input_csv: Path | None = None) -> None:
         print(f"Volume-weighted sale price: {average_sale_price:.2f} GBP/MWh")
     else:
         print("Volume-weighted sale price: N/A (no sales)")
+
+    if output_directory is None:
+        output_directory = Path(__file__).resolve().parent / "outputs"
+
+    output_csv = output_directory / f"{input_csv.stem}_results.csv"
+    if output_csv.exists() and output_csv.samefile(input_csv):
+        raise ValueError("The results CSV must not overwrite the input CSV.")
+
+    save_portfolio_results_csv(
+        file_path=output_csv,
+        delivery_date=portfolio_day.delivery_date,
+        results=results,
+    )
+    print()
+    print(f"Saved {len(results)} result records to: {output_csv}")
+
 
 if __name__ == "__main__":
     main()

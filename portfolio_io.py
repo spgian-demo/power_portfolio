@@ -1,4 +1,4 @@
-"""Lecture 6.2"""
+"""Lecture 6.3"""
 
 import csv
 from datetime import date
@@ -103,3 +103,42 @@ def load_portfolio_inputs_csv(
         raise ValueError("The CSV contains no input records.")
 
     return delivery_date, period_inputs
+
+def save_portfolio_results_csv(
+    file_path: Path,
+    delivery_date: date,
+    results: list[dict[str, float | str]],
+) -> None:
+    """Save calculated period results without recalculating or rounding them.
+    """
+    fieldnames = [
+        "delivery_date",
+        "settlement_period",
+        "wind_mwh",
+        "solar_mwh",
+        "demand_mwh",
+        "price_gbp_per_mwh",
+        "total_generation_mwh",
+        "net_position_mwh",
+        "position",
+        "purchase_mwh",
+        "sale_mwh",
+        "purchase_cost_gbp",
+        "sale_revenue_gbp",
+        "net_market_cash_flow_gbp",
+    ]
+
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with file_path.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for result in results:
+            row: dict[str, float | str] = {
+                "delivery_date": delivery_date.isoformat()
+            }
+            # Copy existing results. Do not calculate a second version here.
+            for field in fieldnames[1:]:
+                row[field] = result[field]
+            writer.writerow(row)

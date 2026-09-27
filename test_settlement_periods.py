@@ -3,6 +3,7 @@
 from datetime import date, datetime, timedelta
 from pathlib import Path
 import pytest
+import csv
 
 from main import main
 from settlement_periods import settlement_period_label, settlement_period_times
@@ -103,7 +104,7 @@ def test_report_shows_time_labels(
     assert loaded_date == date(2026, 9, 1)
     assert loaded_inputs == original_inputs
 
-    main(input_csv=csv_path)
+    main(input_csv=csv_path, output_directory=tmp_path / "outputs")
     output = capsys.readouterr().out
     assert csv_path.read_bytes() == original_file  # The report must not overwrite it.
 
@@ -132,3 +133,13 @@ def test_report_shows_time_labels(
     )
     assert lines[1].startswith("2026-09-01,1,")
     assert lines[-1].startswith("2026-09-01,48,")
+
+    results_path = tmp_path / "outputs" / f"{csv_path.stem}_results.csv"
+    with results_path.open("r", newline="", encoding="utf-8") as results_file:
+        rows = list(csv.DictReader(results_file))
+
+    assert [int(row["settlement_period"]) for row in rows] == list(range(1, 49))
+    assert all(row["delivery_date"] == "2026-09-01" for row in rows)
+    assert float(rows[0]["sale_mwh"]) == pytest.approx(3.07)
+    exported_cash = sum(float(row["net_market_cash_flow_gbp"]) for row in rows)
+    assert f"Total net market cash flow: {exported_cash:+.2f} GBP" in output

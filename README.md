@@ -1,45 +1,31 @@
 # Power Portfolio
 
 Course 121: Power Portfolio Positions and Cash Flows.
-Lecture 6.2
+Lecture 6.3: Exporting Portfolio Results to CSV.
 
 ## Current workflow
 
-CSV file -> restored date and numeric inputs -> PortfolioDay -> existing report.
+Input CSV -> PortfolioDay -> calculations -> printed report and results CSV.
 
-main.py now reads data/portfolio_inputs_2026-09-01.csv by default. The default
-path is relative to main.py, not the terminal's current directory. The delivery
-date used by the model comes from the CSV rows, not from the filename.
+After printing the existing report, main.py exports the same period results to:
 
-main.py no longer calls the sample-data generator or saving function. It does
-not modify or overwrite the input CSV. A missing file raises an error rather
-than silently generating a new dataset. Restore the CSV saved in Lecture 6.1
-or use the unchanged reference file supplied in this archive.
+    outputs/portfolio_inputs_2026-09-01_results.csv
 
-## CSV format and scope
+The outputs folder is created when needed.  
 
-Use these six columns in this exact order:
+## Inputs
+
+Use these six columns in this order:
 
     delivery_date,settlement_period,wind_mwh,solar_mwh,demand_mwh,price_gbp_per_mwh
 
-Use comma separators, a dot for decimal values and ISO date text such as
-2026-09-01. Do not put currency symbols or units inside numeric cells.  
 
-All records must have the same delivery date. Numeric inputs must be finite;
-energy inputs must be non-negative, while negative prices remain permitted.
+## Git checkpoint and supplied files
 
+Review and stage main.py, portfolio_io.py, test_settlement_periods.py, README.md
+and the updated .gitignore. Leave all input CSVs unchanged. Use the existing
+branch and this commit message:
 
-## Files changed and Git checkpoint
+    Export period results to a separate CSV
 
-- portfolio_io.py: add the CSV loading function and the isfinite import.
-- main.py: read saved inputs instead of generating and exporting them.
-- test_settlement_periods.py: adapt the existing report test for temporary input.
-- README.md: explain the workflow and controlled edit.
-
-The reference CSV and all other source files are unchanged from Lecture 6.1.
-No new branch is required for this lesson. Review and stage the four files,
-run the suite, then use this commit message:
-
-    Load portfolio inputs from CSV without overwriting
-
-Push the checked commit. 
+Then push the completed commit. No new branch is required.
