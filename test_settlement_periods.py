@@ -143,3 +143,7 @@ def test_report_shows_time_labels(
     assert float(rows[0]["sale_mwh"]) == pytest.approx(3.07)
     exported_cash = sum(float(row["net_market_cash_flow_gbp"]) for row in rows)
     assert f"Total net market cash flow: {exported_cash:+.2f} GBP" in output
+
+    chart_path = tmp_path / "outputs" / f"{csv_path.stem}_generation_demand.png"
+    assert chart_path.is_file()
+    assert chart_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from portfolio_day import PortfolioDay
 from settlement_periods import settlement_period_label
+from portfolio_plots import save_generation_demand_chart
 
 def main(
     input_csv: Path | None = None,
@@ -131,6 +132,17 @@ def main(
     )
     print()
     print(f"Saved {len(results)} result records to: {output_csv}")
+
+    chart_path = output_directory / f"{input_csv.stem}_generation_demand.png"
+    if chart_path.exists() and chart_path.samefile(input_csv):
+        raise ValueError("The chart must not overwrite the input CSV.")
+
+    save_generation_demand_chart(
+        file_path=chart_path,
+        delivery_date=portfolio_day.delivery_date,
+        results=results,
+    )
+    print(f"Saved generation and consumption chart to: {chart_path}")
 
 
 if __name__ == "__main__":
