@@ -6,7 +6,7 @@ from pathlib import Path
 
 from portfolio_day import PortfolioDay
 from settlement_periods import settlement_period_label
-from portfolio_plots import save_generation_demand_chart, save_position_chart
+from portfolio_plots import save_generation_demand_chart, save_position_chart, save_price_cash_flow_charts
 
 def main(
     input_csv: Path | None = None,
@@ -155,7 +155,20 @@ def main(
     )
     print(f"Saved portfolio position chart to: {position_chart_path}")
 
+    price_chart_path = output_directory / f"{input_csv.stem}_prices.png"
+    cash_flow_chart_path = output_directory / f"{input_csv.stem}_cash_flows.png"
+    for path in (price_chart_path, cash_flow_chart_path):
+        if path.exists() and path.samefile(input_csv):
+            raise ValueError("A chart must not overwrite the input CSV.")
 
+    save_price_cash_flow_charts(
+        price_path=price_chart_path,
+        cash_flow_path=cash_flow_chart_path,
+        delivery_date=portfolio_day.delivery_date,
+        results=results,
+    )
+    print(f"Saved wholesale-price chart to: {price_chart_path}")
+    print(f"Saved market-cash-flow chart to: {cash_flow_chart_path}")
 
 if __name__ == "__main__":
     main()

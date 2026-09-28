@@ -106,3 +106,66 @@ def save_position_chart(
         fig.savefig(file_path, dpi=160, bbox_inches="tight")
     finally:
         plt.close(fig)
+
+def save_price_cash_flow_charts(
+    price_path: Path,
+    cash_flow_path: Path,
+    delivery_date: date,
+    results: list[dict[str, float | str]],
+) -> None:
+    """Save separate price and cash-flow charts from the existing results.
+    """
+    period_numbers = [result["settlement_period"] for result in results]
+    if period_numbers != list(range(1, 49)):
+        raise ValueError("These charts require settlement periods 1 to 48 in order.")
+    if price_path.resolve() == cash_flow_path.resolve():
+        raise ValueError("The two charts require different output paths.")
+
+    # The existing calculation has already produced these signed cash flows.
+    prices = [float(result["price_gbp_per_mwh"]) for result in results]
+    cash_flows = [float(result["net_market_cash_flow_gbp"]) for result in results]
+    edges = [number * 0.5 for number in range(49)]  #[0.0, 0.5, 1.0, 1.5, ..., 23.5, 24.0]
+    start_hours = edges[:-1] # [0.0, 0.5, 1.0, ..., 23.5]
+
+    # Two separate figures, each with one vertical unit and one plot.
+    price_fig, price_ax = plt.subplots(figsize=(12, 5.5))
+    cash_fig, cash_ax = plt.subplots(figsize=(12, 5.5))
+    try:
+        price_ax.stairs(prices, edges, baseline=None, linewidth=1.8)
+        price_ax.set_title(
+            "Assumed wholesale electricity prices\n"
+            f"{delivery_date.isoformat()} | Illustrative data"
+        )
+        price_ax.set_ylabel("Assumed wholesale price (GBP/MWh)")
+
+        cash_ax.bar(start_hours, cash_flows, width=0.5, align="edge")
+        cash_ax.set_title(
+            "Net wholesale market cash flow by settlement period\n"
+            f"{delivery_date.isoformat()} | Illustrative data\n"
+            "Above zero: cash inflow | Below zero: cash outflow"
+        )
+        cash_ax.set_ylabel("Net market cash flow for each half-hour (GBP)")
+
+        # abs() chooses the display range only. Keep the plotted signs.
+        cash_limit = 1.2 * max(1.0, max(abs(value) for value in cash_flows))
+        cash_ax.set_ylim(-cash_limit, cash_limit)
+
+        tick_hours = list(range(0, 25, 3))
+        tick_labels = [f"{hour:02d}:00" for hour in tick_hours]
+        tick_labels[-1] = "00:00\n(+1 day)"
+        for ax in (price_ax, cash_ax):
+            ax.axhline(0.0, linewidth=1.0, linestyle="--")
+            ax.set_xlim(0, 24)
+            ax.set_xticks(tick_hours, labels=tick_labels)
+            ax.set_xlabel("Local clock time (ordinary 48-period day)")
+            ax.set_axisbelow(True)
+            ax.grid(axis="y", alpha=0.25)
+
+        # Do not force the price axis above zero: negative prices remain visible.
+        price_path.parent.mkdir(parents=True, exist_ok=True)
+        cash_flow_path.parent.mkdir(parents=True, exist_ok=True)
+        price_fig.savefig(price_path, dpi=160, bbox_inches="tight")
+        cash_fig.savefig(cash_flow_path, dpi=160, bbox_inches="tight")
+    finally:
+        plt.close(price_fig)
+        plt.close(cash_fig)

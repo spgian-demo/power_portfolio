@@ -1,8 +1,4 @@
 """Lectures 5.1 and 5.2:  price examples and daily price sensitivity.
-
-The daily cases use the SAME generation and consumption at different prices.
-They are alternative versions of one day, not consecutive days.
-The financial formulas, sample-data generator and main.py stay unchanged.
 """
 
 from datetime import date
