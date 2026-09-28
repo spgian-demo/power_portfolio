@@ -59,3 +59,50 @@ def save_generation_demand_chart(
         fig.savefig(file_path, dpi=160, bbox_inches="tight")
     finally:
         plt.close(fig)
+
+
+def save_position_chart(
+    file_path: Path,
+    delivery_date: date,
+    results: list[dict[str, float | str]],
+) -> None:
+    """Save signed pre-trade energy positions for an ordinary 48-period day.
+    """
+    period_numbers = [result["settlement_period"] for result in results]
+    if period_numbers != list(range(1, 49)):
+        raise ValueError("This chart requires settlement periods 1 to 48 in order.")
+
+    # Place the left edge of each bar at its half-hour start.
+    start_hours = [(number - 1) * 0.5 for number in range(1, 49)]  #[0.0, 0.5, 1.0, 1.5, ..., 23.5]
+    positions = [float(result["net_position_mwh"]) for result in results]
+
+    fig, ax = plt.subplots(figsize=(12, 6.5))
+    ax.bar(start_hours, positions, width=0.5, align="edge")
+    ax.axhline(0.0, linewidth=1.2, linestyle="--")
+
+    ax.set_title(
+        "Power portfolio position before market trades\n"
+        f"{delivery_date.isoformat()} | Illustrative data\n"
+        "Above zero: LONG (surplus) | Below zero: SHORT (shortage)"
+    )
+    ax.set_xlabel("Local clock time (ordinary 48-period day)")
+    ax.set_ylabel("Net electricity position in each half-hour (MWh)")
+    ax.set_xlim(0, 24)
+
+    # Equal space above and below zero. abs() is ONLY for the axis range.
+    # Keep every plotted position signed. The minimum range handles all zeros.
+    limit = 1.2 * max(1.0, max(abs(value) for value in positions))
+    ax.set_ylim(-limit, limit)
+
+    tick_hours = list(range(0, 25, 3))
+    tick_labels = [f"{hour:02d}:00" for hour in tick_hours]
+    tick_labels[-1] = "00:00\n(+1 day)"
+    ax.set_xticks(tick_hours, labels=tick_labels)
+    ax.set_axisbelow(True)
+    ax.grid(axis="y", alpha=0.25)
+
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fig.savefig(file_path, dpi=160, bbox_inches="tight")
+    finally:
+        plt.close(fig)

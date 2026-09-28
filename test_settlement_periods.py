@@ -147,3 +147,7 @@ def test_report_shows_time_labels(
     chart_path = tmp_path / "outputs" / f"{csv_path.stem}_generation_demand.png"
     assert chart_path.is_file()
     assert chart_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+
+    position_chart = tmp_path / "outputs" / f"{csv_path.stem}_positions.png"
+    assert position_chart.is_file()
+    assert position_chart.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")

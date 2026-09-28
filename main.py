@@ -6,13 +6,13 @@ from pathlib import Path
 
 from portfolio_day import PortfolioDay
 from settlement_periods import settlement_period_label
-from portfolio_plots import save_generation_demand_chart
+from portfolio_plots import save_generation_demand_chart, save_position_chart
 
 def main(
     input_csv: Path | None = None,
     output_directory: Path | None = None,
 ) -> None:
-    """Read inputs, print results and write a separate period-results CSV."""
+    """Read inputs, print results, export the CSV and save two energy charts"""
 
     if input_csv is None:
         input_csv = (
@@ -143,6 +143,18 @@ def main(
         results=results,
     )
     print(f"Saved generation and consumption chart to: {chart_path}")
+
+    position_chart_path = output_directory / f"{input_csv.stem}_positions.png"
+    if position_chart_path.exists() and position_chart_path.samefile(input_csv):
+        raise ValueError("The position chart must not overwrite the input CSV.")
+
+    save_position_chart(
+        file_path=position_chart_path,
+        delivery_date=portfolio_day.delivery_date,
+        results=results,
+    )
+    print(f"Saved portfolio position chart to: {position_chart_path}")
+
 
 
 if __name__ == "__main__":
