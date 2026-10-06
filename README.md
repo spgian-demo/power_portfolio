@@ -123,3 +123,9 @@ power_portfolio/
 
 **Dr. Spyros Giannelos**  
 **The Energy Data Scientist**
+
+
+## Collaboration workflow
+
+Review incoming changes before integrating them into your local branch.
+Keep reference inputs and financial formulas unchanged unless the task requires it.
