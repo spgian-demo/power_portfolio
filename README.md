@@ -129,3 +129,13 @@ power_portfolio/
 
 Review incoming changes before integrating them into your local branch.
 Keep reference inputs and financial formulas unchanged unless the task requires it.
+
+## Planned command-line interface
+
+Status: planned, not implemented.
+
+We will add `--input`, `--output-dir` and `--help` so an analyst
+can choose files from the terminal without editing Python code.
+
+Existing defaults, input files and financial calculations must
+remain unchanged.
