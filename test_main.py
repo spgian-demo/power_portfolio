@@ -1,12 +1,16 @@
+from pathlib import Path
+from unittest.mock import Mock
+
 import pytest
 
+import main as main_module
 from portfolio_calculations import (
     calculate_portfolio_period,
     calculate_portfolio_periods,
     summarise_period_results,
 )
-from sample_data import generate_sample_day
 from price_examples import shift_wholesale_prices
+from sample_data import generate_sample_day
 
 
 def test_short_portfolio_cash_flow() -> None:
@@ -36,9 +40,8 @@ def test_short_portfolio_cash_flow() -> None:
     assert result["sale_mwh"] == pytest.approx(0.0, rel=0, abs=1e-9)
     assert result["purchase_cost_gbp"] == pytest.approx(160.0, rel=0, abs=1e-9)
     assert result["sale_revenue_gbp"] == pytest.approx(0.0, rel=0, abs=1e-9)
-    assert result["net_market_cash_flow_gbp"] == pytest.approx(
-        -160.0, rel=0, abs=1e-9
-    )
+    assert result["net_market_cash_flow_gbp"] == pytest.approx(-160.0, rel=0, abs=1e-9)
+
 
 def test_three_period_results_and_totals() -> None:
     """Check each period and the aggregate against hand-calculated values."""
@@ -85,9 +88,7 @@ def test_three_period_results_and_totals() -> None:
     }
     for field, expected_values in expected_by_period.items():
         actual_values = [result[field] for result in results]
-        assert actual_values == pytest.approx(
-            expected_values, rel=0, abs=1e-9
-        ), field
+        assert actual_values == pytest.approx(expected_values, rel=0, abs=1e-9), field
 
     totals = summarise_period_results(results)
 
@@ -105,6 +106,7 @@ def test_three_period_results_and_totals() -> None:
     }
     assert totals == pytest.approx(expected_totals, rel=0, abs=1e-9)
 
+
 def test_sample_day_contains_all_48_periods() -> None:
     inputs = generate_sample_day(seed=42)
     numbers = [period["settlement_period"] for period in inputs]
@@ -112,11 +114,13 @@ def test_sample_day_contains_all_48_periods() -> None:
     # Equality checks the count, identifiers, uniqueness and order together.
     assert numbers == list(range(1, 49))
 
+
 def test_sample_day_is_reproducible() -> None:
     first_run = generate_sample_day(seed=42)
     second_run = generate_sample_day(seed=42)
 
     assert first_run == second_run
+
 
 def test_positive_zero_and_negative_price_cash_flows() -> None:
     """Compare six price examples with monetary amounts calculated by hand."""
@@ -147,16 +151,17 @@ def test_positive_zero_and_negative_price_cash_flows() -> None:
         ), f"wind={wind}, price={price}"
 
 
-
 def test_price_shift_preserves_inputs_and_changes_cash_flow() -> None:
     """A 2 MWh shortage costs 200 GBP after the price rises from 80 to 100."""
-    original = [{
-        "settlement_period": 25,
-        "wind_mwh": 8.0,
-        "solar_mwh": 2.0,
-        "demand_mwh": 12.0,
-        "price_gbp_per_mwh": 80.0,
-    }]
+    original = [
+        {
+            "settlement_period": 25,
+            "wind_mwh": 8.0,
+            "solar_mwh": 2.0,
+            "demand_mwh": 12.0,
+            "price_gbp_per_mwh": 80.0,
+        }
+    ]
     shifted = shift_wholesale_prices(original, 20.0)
 
     assert original[0]["price_gbp_per_mwh"] == 80.0
@@ -167,3 +172,83 @@ def test_price_shift_preserves_inputs_and_changes_cash_flow() -> None:
     result = calculate_portfolio_periods(shifted)[0]
     assert result["purchase_mwh"] == pytest.approx(2.0)
     assert result["net_market_cash_flow_gbp"] == pytest.approx(-200.0)
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected_status", "expected_message"),
+    [
+        (["--help"], 0, "usage:"),
+        (["-h"], 0, "usage:"),
+        (
+            ["--input", "missing.csv"],
+            2,
+            "Input CSV is not an existing file: missing.csv",
+        ),
+        (["--unknown"], 2, "unrecognized arguments: --unknown"),
+        (["--input"], 2, "argument --input: expected one argument"),
+        (["--output-dir"], 2, "argument --output-dir: expected one argument"),
+    ],
+)
+def test_cli_help_and_invalid_arguments_stop_before_main(
+    argv: list[str],
+    expected_status: int,
+    expected_message: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Help and argument errors stop without calling the report or saving files."""
+    fake_main = Mock()
+    monkeypatch.setattr(main_module, "main", fake_main)
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main_module.cli(argv)
+
+    assert exc_info.value.code == expected_status
+    captured = capsys.readouterr()
+    if expected_status == 0:
+        assert expected_message in captured.out
+        assert "--input" in captured.out
+        assert "--output-dir" in captured.out
+        assert "--help" in captured.out
+        assert captured.err == ""
+    else:
+        assert expected_message in captured.err
+        assert "usage:" in captured.err
+        assert captured.out == ""
+
+    fake_main.assert_not_called()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_cli_without_options_preserves_defaults(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No options leaves default input and output selection to main()."""
+    fake_main = Mock()
+    monkeypatch.setattr(main_module, "main", fake_main)
+
+    main_module.cli([])
+
+    fake_main.assert_called_once_with(input_csv=None, output_directory=None)
+
+
+def test_cli_passes_selected_input_and_output_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Selected paths, including spaces, reach main() as Path objects."""
+    input_csv = tmp_path / "selected input.csv"
+    input_csv.touch()
+    output_directory = tmp_path / "selected results"
+    fake_main = Mock()
+    monkeypatch.setattr(main_module, "main", fake_main)
+
+    main_module.cli(["--input", str(input_csv), "--output-dir", str(output_directory)])
+
+    fake_main.assert_called_once_with(
+        input_csv=input_csv,
+        output_directory=output_directory,
+    )
+    assert not output_directory.exists()
