@@ -129,3 +129,41 @@ power_portfolio/
 
 Review incoming changes before integrating them into your local branch.
 Keep reference inputs and financial formulas unchanged unless the task requires it.
+
+## Command-line interface
+
+Run these commands from the project root using the existing Python environment.
+
+Use the default input file and output folder:
+
+```sh
+./.venv/bin/python main.py
+```
+
+Select an existing input CSV and a folder for the results CSV and four PNG charts:
+
+```sh
+./.venv/bin/python main.py --input data/portfolio_inputs_2026-09-01.csv --output-dir results
+```
+
+Both options are optional and can be used independently. Omitting `--input` uses
+`data/portfolio_inputs_2026-09-01.csv`; omitting `--output-dir` uses `outputs/`.
+These defaults are relative to the folder containing `main.py`. Paths supplied
+on the command line are relative to the terminal's current working directory,
+unless they are absolute paths. Quote paths containing spaces. A missing output
+folder is created when results are saved.
+
+If an explicitly selected input is missing or is a directory, the command reports
+`Input CSV is not an existing file: <path>` on stderr and exits with status 2
+before running the model or creating results. It does not use the default dataset
+instead. Existing CSV content validation still applies.
+
+Display usage instructions without running the model or creating results:
+
+```sh
+./.venv/bin/python main.py --help
+```
+
+`-h` also displays help. Help exits with status 0. The existing programmatic
+`main(input_csv=..., output_directory=...)` interface and financial calculations
+remain unchanged.

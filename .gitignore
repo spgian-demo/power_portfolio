@@ -12,3 +12,5 @@ __pycache__/
 # Ignore macOS Finder metadata.
 .DS_Store
 
+# Ignore temporary CLI demonstration outputs
+outputs/cli_demo/

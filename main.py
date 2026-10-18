@@ -1,12 +1,17 @@
-""" Lecture 6.3"""
+"""Lecture 6.3"""
 
-
-from portfolio_io import load_portfolio_inputs_csv, save_portfolio_results_csv
+import argparse
 from pathlib import Path
 
 from portfolio_day import PortfolioDay
+from portfolio_io import load_portfolio_inputs_csv, save_portfolio_results_csv
+from portfolio_plots import (
+    save_generation_demand_chart,
+    save_position_chart,
+    save_price_cash_flow_charts,
+)
 from settlement_periods import settlement_period_label
-from portfolio_plots import save_generation_demand_chart, save_position_chart, save_price_cash_flow_charts
+
 
 def main(
     input_csv: Path | None = None,
@@ -16,18 +21,13 @@ def main(
 
     if input_csv is None:
         input_csv = (
-            Path(__file__).resolve().parent
-            / "data"
-            / "portfolio_inputs_2026-09-01.csv"
+            Path(__file__).resolve().parent / "data" / "portfolio_inputs_2026-09-01.csv"
         )
 
     # The contents of the CSV supply both the date and the energy/price inputs.
     # A missing file raises an error.
 
     delivery_date, period_inputs = load_portfolio_inputs_csv(input_csv)
-
-
-
 
     portfolio_day = PortfolioDay(
         delivery_date=delivery_date,
@@ -42,7 +42,6 @@ def main(
         raise ValueError(
             "This full-day report requires settlement periods 1 to 48 in order."
         )
-
 
     totals = portfolio_day.calculate_totals()
 
@@ -102,13 +101,11 @@ def main(
     print(f"Short periods: {positions.count('SHORT')}")
     print(f"Balanced periods: {positions.count('BALANCED')}")
 
-    #Monetary totals divided by traded MWh give volume-weighted prices.
+    # Monetary totals divided by traded MWh give volume-weighted prices.
     # Use unrounded totals for the division. Round only the displayed values.
     if totals["purchase_mwh"] > 0.0:
         average_purchase_price = totals["purchase_cost_gbp"] / totals["purchase_mwh"]
-        print(
-            f"Volume-weighted purchase price: {average_purchase_price:.2f} GBP/MWh"
-        )
+        print(f"Volume-weighted purchase price: {average_purchase_price:.2f} GBP/MWh")
     else:
         print("Volume-weighted purchase price: N/A (no purchases)")
 
@@ -170,5 +167,38 @@ def main(
     print(f"Saved wholesale-price chart to: {price_chart_path}")
     print(f"Saved market-cash-flow chart to: {cash_flow_chart_path}")
 
+
+def cli(argv: list[str] | None = None) -> None:
+    """Parse command-line options before running the existing report."""
+    parser = argparse.ArgumentParser(
+        description="Calculate power portfolio positions and wholesale market cash flows."
+    )
+
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=None,
+        metavar="CSV",
+        help=(
+            "Existing input CSV file (default: data/portfolio_inputs_2026-09-01.csv "
+            "relative to main.py)."
+        ),
+    )
+    parser.add_argument(
+        "--output-dir",
+        dest="output_directory",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help="Folder for results and charts (default: outputs/ relative to main.py).",
+    )
+    args = parser.parse_args(argv)
+
+    if args.input is not None and not args.input.is_file():
+        parser.error(f"Input CSV is not an existing file: {args.input}")
+
+    main(input_csv=args.input, output_directory=args.output_directory)
+
+
 if __name__ == "__main__":
-    main()
+    cli()
