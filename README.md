@@ -167,3 +167,33 @@ Display usage instructions without running the model or creating results:
 `-h` also displays help. Help exits with status 0. The existing programmatic
 `main(input_csv=..., output_directory=...)` interface and financial calculations
 remain unchanged.
+
+## Scenario comparison
+
+`compare_scenarios.py` compares two input CSVs for the same delivery date: a
+baseline and an alternative scenario. It uses the existing calculations to obtain
+the ten daily totals for each file, then reports each difference as
+**scenario minus baseline**. It prints a table (values to two decimals) and saves
+one comparison CSV with unrounded values. It does not create charts.
+
+```sh
+./.venv/bin/python compare_scenarios.py \
+  --baseline data/portfolio_inputs_2026-09-01.csv \
+  --scenario data/portfolio_inputs_more_demand.csv \
+  --output outputs/scenario_comparison.csv
+```
+
+- `--baseline` and `--scenario` are required and must be existing input CSVs.
+- `--output` is optional. Give the full CSV filename, including its folder. The
+  default is `outputs/scenario_comparison.csv` relative to `compare_scenarios.py`.
+  A missing folder is created. The output must not be one of the input files.
+
+Both files must have the same delivery date and settlement periods 1 to 48, in
+increasing order, each appearing once. Otherwise the script reports an error and
+stops without writing the comparison CSV.
+
+Display usage instructions without running the comparison:
+
+```sh
+./.venv/bin/python compare_scenarios.py --help
+```
