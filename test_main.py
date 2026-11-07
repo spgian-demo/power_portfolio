@@ -1,14 +1,17 @@
+from datetime import date
 from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 
 import main as main_module
+from compare_scenarios import compare_totals, load_checked_day
 from portfolio_calculations import (
     calculate_portfolio_period,
     calculate_portfolio_periods,
     summarise_period_results,
 )
+from portfolio_io import save_portfolio_inputs_csv
 from price_examples import shift_wholesale_prices
 from sample_data import generate_sample_day
 
@@ -173,6 +176,53 @@ def test_price_shift_preserves_inputs_and_changes_cash_flow() -> None:
     assert result["purchase_mwh"] == pytest.approx(2.0)
     assert result["net_market_cash_flow_gbp"] == pytest.approx(-200.0)
 
+
+def test_scenario_comparison_net_market_cash_flow(tmp_path: Path) -> None:
+    """Compare daily net market cash flow for a baseline and a scenario day."""
+
+    def build_day(period_1_demand_mwh: float) -> list[dict[str, int | float]]:
+        """Return 48 periods; only period 1 demand varies between cases."""
+        periods: list[dict[str, int | float]] = []
+        for settlement_period in range(1, 49):
+            if settlement_period == 1:
+                wind_mwh, demand_mwh, price = 8.0, period_1_demand_mwh, 80.0
+            elif settlement_period == 2:
+                wind_mwh, demand_mwh, price = 12.0, 12.0, 100.0
+            else:
+                wind_mwh, demand_mwh, price = 10.0, 12.0, 80.0
+            periods.append(
+                {
+                    "settlement_period": settlement_period,
+                    "wind_mwh": wind_mwh,
+                    "solar_mwh": 2.0,
+                    "demand_mwh": demand_mwh,
+                    "price_gbp_per_mwh": price,
+                }
+            )
+        return periods
+
+    # Write both cases to temporary CSV files, then read them back
+    # with the existing loader and the 48-period check.
+    delivery_date = date(2026, 9, 1)
+    baseline_csv = tmp_path / "baseline.csv"
+    scenario_csv = tmp_path / "scenario.csv"
+    save_portfolio_inputs_csv(baseline_csv, delivery_date, build_day(12.0))
+    save_portfolio_inputs_csv(scenario_csv, delivery_date, build_day(13.0))
+
+    baseline_day = load_checked_day(baseline_csv)
+    scenario_day = load_checked_day(scenario_csv)
+
+    rows = compare_totals(baseline_day, scenario_day)
+    cash_flow_row = next(row for row in rows if row["metric"] == "Net market cash flow")
+
+    # Results established by hand before running the test.
+    # Baseline: P1 short 2 MWh x 80 = -160; P2 long 2 MWh x 100 = +200;
+    #           P3-48 balanced = 0. Total +40 GBP.
+    # Scenario: P1 short 3 MWh x 80 = -240; rest unchanged. Total -40 GBP.
+    # Difference (scenario minus baseline): -40 - 40 = -80 GBP.
+    assert cash_flow_row["baseline"] == pytest.approx(40.0, rel=0, abs=1e-9)
+    assert cash_flow_row["scenario"] == pytest.approx(-40.0, rel=0, abs=1e-9)
+    assert cash_flow_row["difference"] == pytest.approx(-80.0, rel=0, abs=1e-9)
 
 @pytest.mark.parametrize(
     ("argv", "expected_status", "expected_message"),
